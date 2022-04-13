@@ -1,0 +1,55 @@
+{
+  "name": "@ricokahler/lazy",
+  "version": "0.1.0",
+  "description": "",
+  "keywords": [
+    "iterable",
+    "enumerable",
+    "linq",
+    "lazy",
+    "lazy.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ricokahler/lazy.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Rico Kahler",
+    "email": "hello@rico.codes",
+    "url": "https://github.com/ricokahler"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": [
+      {
+        "import": "./dist/index.exports.import.es.mjs",
+        "default": "./dist/index.exports.require.cjs.js"
+      },
+      "./dist/index.exports.require.cjs.js"
+    ],
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.main.cjs.js",
+  "jsdelivr": "./dist/index.unpkg.umd.js",
+  "unpkg": "./dist/index.unpkg.umd.js",
+  "module": "./dist/index.module.es.js",
+  "types": "./index.d.ts",
+  "scripts": {
+    "build": "./scripts/build",
+    "test": "jest",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.16.11",
+    "@babel/preset-typescript": "^7.16.7",
+    "@rollup/plugin-babel": "^5.3.1",
+    "@rollup/plugin-node-resolve": "^13.2.0",
+    "@sanity/eslint-config-studio": "^2.0.0",
+    "@types/jest": "^27.4.1",
+    "eslint": "^8.13.0",
+    "jest": "^27.5.1",
+    "rollup": "^2.70.1",
+    "typescript": "^4.6.3"
+  }
+}

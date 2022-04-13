@@ -1,0 +1,10 @@
+coverage
+node_modules
+scripts
+.babelrc
+.eslintrc
+.gitignore
+index.test.ts
+package-lock.json
+rollup.config.js
+tsconfig.json

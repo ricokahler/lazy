@@ -1,7 +1,7 @@
 {
   "name": "@ricokahler/lazy",
   "version": "0.1.0",
-  "description": "",
+  "description": "A small, useful set of methods for lazy iteration of iterables",
   "keywords": [
     "iterable",
     "enumerable",

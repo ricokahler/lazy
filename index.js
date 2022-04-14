@@ -54,6 +54,28 @@ function* takeWhile(iterable, accept) {
   }
 }
 
+function* flat(iterable, depth = 1) {
+  for (const item of iterable) {
+    if (typeof item[Symbol.iterator] !== 'function') {
+      yield item;
+      continue;
+    }
+
+    if (depth > 1) {
+      yield* flat(item, depth - 1);
+      continue;
+    }
+
+    for (const subitem of item) {
+      yield subitem;
+    }
+  }
+}
+
+function flatMap(iterable, mapper) {
+  return flat(map(iterable, mapper));
+}
+
 /**
  * @param {Iterable<unknown>} iterable
  * @param {(item: unknown) => unknown} accept
@@ -74,6 +96,8 @@ function* skipWhile(iterable, accept) {
 
 const chainableMethods = {
   map,
+  flat,
+  flatMap,
   filter,
   take,
   skip,
@@ -151,7 +175,7 @@ const allMethods = { ...chainableMethods, ...otherMethods };
 
 class Lazy {
   constructor(iterable) {
-    this.iterable = iterable;
+    this.iterable = iterable || [];
     for (const methodName of Object.keys(allMethods)) {
       this[methodName] = this[methodName].bind(this);
     }

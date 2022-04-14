@@ -1,4 +1,4 @@
-import Lazy from './';
+import Lazy from './index';
 
 describe('Lazy.from', () => {
   it('takes in iterables and returns a wrapper with chainable methods', () => {
@@ -21,6 +21,8 @@ describe('Lazy.from', () => {
     expect(getter5).not.toHaveBeenCalled();
   });
   it.todo('general lazy-like tests');
+  it.todo('binds methods to the `this` instance');
+  it.todo('regenerator runtime');
 });
 
 describe('take', () => {
@@ -65,6 +67,17 @@ describe('map', () => {
   it('yields the result of the functor over each item', () => {
     expect(
       Lazy.from([1, 2, 3])
+        .map((n) => n + 1)
+        .to(Array),
+    ).toEqual([2, 3, 4]);
+  });
+});
+
+describe('flat', () => {
+  it('yields the inner subitems of nested iterables, flattening the iterable', () => {
+    expect(
+      Lazy.from([[1], 2, [[3]]])
+        .flat(2)
         .map((n) => n + 1)
         .to(Array),
     ).toEqual([2, 3, 4]);

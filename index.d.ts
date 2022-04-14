@@ -45,11 +45,11 @@ declare class Lazy<T> implements Iterable<T> {
   static filter<T, R extends T>(
     iterable: Iterable<T>,
     accept: (t: T) => t is R,
-  ): Generator<R>;
+  ): Iterable<R>;
   static filter<T>(
     iterable: Iterable<T>,
     accept: (t: T) => unknown,
-  ): Generator<T>;
+  ): Iterable<T>;
 
   /**
    * Takes in an iterable and returns an iterable generator that yields the
@@ -62,7 +62,10 @@ declare class Lazy<T> implements Iterable<T> {
     depth?: TDepth,
   ): FlatIterable<T, TDepth>;
 
-  static flatMap<T, U>(iterable: T, mapper: (value: T) => U | Iterable<U>): U[];
+  static flatMap<T, R>(
+    iterable: T,
+    mapper: (value: T) => R | Iterable<R>,
+  ): Iterable<R>;
 
   /**
    * Yields the first `n` items of the given iterable and stops further
@@ -219,7 +222,7 @@ declare class Lazy<T> implements Iterable<T> {
     depth?: TDepth,
   ): Lazy<FlatIterable<T, TDepth>>;
 
-  flatMap<U>(mapper: (value: T) => U | Iterable<U>): U[];
+  flatMap<R>(mapper: (value: T) => R | Iterable<R>): Lazy<R>;
 
   /**
    * Yields the first `n` items of the given iterable and stops further

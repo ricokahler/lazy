@@ -30,6 +30,8 @@ type FlatIterable<TIterable, TDepth extends number> = {
  * A small, _useful_ set of methods for lazy iteration of iterables
  */
 declare class Lazy<T> implements Iterable<T> {
+  public iterable: Iterable<T>;
+
   /**
    * Takes in any iterable and returns it wrapped in a `Lazy` with chainable
    * `Lazy` methods

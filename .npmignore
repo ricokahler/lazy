@@ -9,5 +9,6 @@ scripts
 index.test.ts
 index.regenerator.js
 package-lock.json
+renovate.json
 rollup.config.js
 tsconfig.json

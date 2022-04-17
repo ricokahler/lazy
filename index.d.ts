@@ -59,11 +59,20 @@ declare class Lazy<T> implements Iterable<T> {
    */
   static map<T, R>(iterable: Iterable<T>, mapper: (t: T) => R): Iterable<R>;
 
+  /**
+   * Returns a new iterable with all sub-iterable items yielded into it
+   * recursively up to the specified depth.
+   */
   static flat<T, TDepth extends number = 1>(
     iterable: T,
     depth?: TDepth,
   ): FlatIterable<T, TDepth>;
 
+  /**
+   * Calls the result of the given callback function on each item of the parent
+   * iterable. Then, yields the result of each into a flatted iterable. This is
+   * identical to a map followed by flat with depth 1.
+   */
   static flatMap<T, R>(
     iterable: T,
     mapper: (value: T) => R | Iterable<R>,
@@ -220,10 +229,19 @@ declare class Lazy<T> implements Iterable<T> {
    */
   map<R>(mapper: (t: T) => R): Lazy<R>;
 
+  /**
+   * Returns a new iterable with all sub-iterable items yielded into it
+   * recursively up to the specified depth.
+   */
   flat<TDepth extends number = 1>(
     depth?: TDepth,
   ): Lazy<FlatIterable<T, TDepth>>;
 
+  /**
+   * Calls the result of the given callback function on each item of the parent
+   * iterable. Then, yields the result of each into a flatted iterable. This is
+   * identical to a map followed by flat with depth 1.
+   */
   flatMap<R>(mapper: (value: T) => R | Iterable<R>): Lazy<R>;
 
   /**

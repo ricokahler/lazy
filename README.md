@@ -57,7 +57,9 @@ import Lazy from '@ricokahler/lazy';
 const Lazy = require('@ricokahler/lazy');
 ```
 
-You can then either chain the methods like arrays:
+You can then:
+
+1. chain the methods like arrays:
 
 ```js
 const result = Lazy.from([1, 2, 3])
@@ -68,7 +70,7 @@ const result = Lazy.from([1, 2, 3])
 console.log(result); // 3
 ```
 
-Or use the static method counterparts:
+2. Or use the static method counterparts:
 
 ```js
 let iterable = Lazy.from([1, 2, 3]);

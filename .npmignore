@@ -4,7 +4,10 @@ scripts
 .babelrc
 .eslintrc
 .gitignore
+.prettierrc
+.releaserc.json
 index.test.ts
+index.regenerator.js
 package-lock.json
 rollup.config.js
 tsconfig.json

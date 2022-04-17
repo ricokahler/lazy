@@ -38,7 +38,8 @@
   "scripts": {
     "build": "./scripts/build",
     "test": "jest",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "lint": "eslint ./index.js && tsc"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",
@@ -51,6 +52,7 @@
     "jest": "^27.5.1",
     "regenerator-runtime": "^0.13.9",
     "rollup": "^2.70.1",
+    "semantic-release": "^19.0.2",
     "typescript": "^4.6.3"
   }
 }

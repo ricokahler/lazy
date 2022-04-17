@@ -1,6 +1,6 @@
-# @ricokahler/lazy · [![bundlephobia](https://badgen.net/bundlephobia/minzip/@ricokahler/lazy)](https://bundlephobia.com/result?p=@ricokahler/lazy)
+# @ricokahler/lazy · [![codecov](https://codecov.io/gh/ricokahler/lazy/branch/master/graph/badge.svg)](https://codecov.io/gh/ricokahler/lazy) [![github status checks](https://badgen.net/github/checks/ricokahler/lazy)](https://github.com/ricokahler/lazy/actions) [![bundlephobia](https://badgen.net/bundlephobia/minzip/@ricokahler/lazy)](https://bundlephobia.com/result?p=@ricokahler/lazy) [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-A small, **useful** set of methods for lazy iteration of iterables.
+A small (~600b gzip), **useful** set of methods for lazy iteration of iterables.
 
 ---
 
@@ -14,7 +14,7 @@ A small, **useful** set of methods for lazy iteration of iterables.
 
 ## Why this lazy lib?
 
-1. Small size (~600b gzipped)
+1. Small size [(~600b gzipped)](https://bundle.js.org/?q=@ricokahler/lazy@latest)
 2. Simple, modern `for...of`-only implementations. (Read the source [here](https://github.com/ricokahler/lazy/blob/main/index.js))
 3. Only ships _useful_\* methods
 

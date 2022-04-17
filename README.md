@@ -4,6 +4,14 @@ A small, **useful** set of methods for lazy iteration of iterables.
 
 ---
 
+- [Why this lazy lib?](#why-this-lazy-lib)
+- [Do I even need a lazy lib?](#do-i-even-need-a-lazy-lib)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Method reference](#method-reference)
+
+---
+
 ## Why this lazy lib?
 
 1. Small size (~600b gzipped)
@@ -81,7 +89,7 @@ const result = Lazy.first(iterable);
 console.log(result); // 3
 ```
 
-## Methods
+## Method Reference
 
 [**Conversion methods**](#conversion-methods)
 
@@ -109,7 +117,7 @@ console.log(result); // 3
 
 ### Conversion methods
 
-#### `Lazy.from` | [🔝](#methods)
+#### `Lazy.from` | [🔝](#method-reference)
 
 Takes in any iterable and returns it wrapped in a `Lazy` with chainable `Lazy` methods.
 
@@ -120,7 +128,7 @@ Lazy.from<T>(iterable: Iterable<T>): Lazy<T>
 
 Note: this is equivalent to calling `new Lazy(iterable)`
 
-#### `to` | [🔝](#methods)
+#### `to` | [🔝](#method-reference)
 
 Writes the iterable into another data structure. Accepts an object with a `from` method that accepts an iterable (e.g. `Array.from`) or a constructor that accepts an iterable.
 
@@ -142,7 +150,7 @@ Lazy<T>.to<TInstance>(constructor: {new (iterable: Iterable<T>) => TInstance}): 
 
 ### Chainable methods
 
-#### `map` | [🔝](#methods)
+#### `map` | [🔝](#method-reference)
 
 Takes in an iterable and returns an iterable generator that yields the result of the callback function on each item from the input iterable.
 
@@ -150,7 +158,7 @@ Takes in an iterable and returns an iterable generator that yields the result of
 Lazy<T>.map<R>(mapper: (t: T) => R): Lazy<R>
 ```
 
-#### `filter` | [🔝](#methods)
+#### `filter` | [🔝](#method-reference)
 
 Takes in an iterable and returns an iterable generator that yields the accepted elements of the given callback function.
 
@@ -159,7 +167,7 @@ Lazy<T>.filter<R extends T>(accept: (t: T) => t is R): Lazy<R>
 Lazy<T>.filter<R extends T>(accept: (t: T) => t is R): Lazy<R>
 ```
 
-#### `flat` | [🔝](#methods)
+#### `flat` | [🔝](#method-reference)
 
 Returns a new iterable with all sub-iterable items yielded into it recursively up to the specified depth.
 
@@ -167,7 +175,7 @@ Returns a new iterable with all sub-iterable items yielded into it recursively u
 Lazy<T>.flat<TDepth extends number>(depth?: TDepth): Lazy<Flattened<T, TDepth>>
 ```
 
-#### `flatMap` | [🔝](#methods)
+#### `flatMap` | [🔝](#method-reference)
 
 Calls the result of the given callback function on each item of the parent iterable. Then, yields the result of each into a flatted iterable. This is identical to a map followed by flat with depth 1.
 
@@ -175,7 +183,7 @@ Calls the result of the given callback function on each item of the parent itera
 Lazy<T>.flatMap<R>(mapper: (value: T) => R | Iterable<R>): Lazy<R>
 ```
 
-#### `take` | [🔝](#methods)
+#### `take` | [🔝](#method-reference)
 
 Yields the first `n` items of the given iterable and stops further iteration.
 
@@ -189,7 +197,7 @@ console.log(result); // [1, 2, 3]
 Lazy<T>.take(n: number): Lazy<T>
 ```
 
-#### `takeWhile` | [🔝](#methods)
+#### `takeWhile` | [🔝](#method-reference)
 
 Yields while the callback function accepts the current item from the given iterable. Iteration finishes as soon as an item is rejected by the callback.
 
@@ -205,7 +213,7 @@ Lazy<T>.takeWhile<R extends T>(accept: (t: T) => t is R): Lazy<R>
 Lazy<T>.takeWhile(accept: (t: T) => unknown): Lazy<T>
 ```
 
-#### `skip` | [🔝](#methods)
+#### `skip` | [🔝](#method-reference)
 
 Skips over the first `n` items of the given iterable then yields the rest.
 
@@ -218,7 +226,7 @@ console.log(result); // [3, 4, 5]
 Lazy<T>.skip(n: number): Lazy<T>
 ```
 
-#### `skipWhile` | [🔝](#methods)
+#### `skipWhile` | [🔝](#method-reference)
 
 Skips over the items while the given callback accepts the current item from the given iterable, then yields the rest.
 
@@ -236,7 +244,7 @@ Lazy<T>.skip(n: number): Lazy<T>
 
 ### Short-circuiting, terminating methods
 
-#### `includes` | [🔝](#methods)
+#### `includes` | [🔝](#method-reference)
 
 Determines whether an iterable includes a certain value using `===` comparison. Short-circuits iteration once the value is found.
 
@@ -244,7 +252,7 @@ Determines whether an iterable includes a certain value using `===` comparison. 
 Lazy<T>.includes(t: T): boolean
 ```
 
-#### `first` | [🔝](#methods)
+#### `first` | [🔝](#method-reference)
 
 Returns the first item of an iterable or `undefined` if the iterable is done/exhausted.
 
@@ -252,7 +260,7 @@ Returns the first item of an iterable or `undefined` if the iterable is done/exh
 Lazy<T>.first(): T | undefined
 ```
 
-#### `find` | [🔝](#methods)
+#### `find` | [🔝](#method-reference)
 
 Returns the first item accepted by the given callback. Short-circuits iteration once an item is found.
 
@@ -261,7 +269,7 @@ Lazy<T>.find<R extends T>(accept: (t: T) => t is R): R | undefined
 Lazy<T>.find(accept: (t: T) => unknown): T | undefined
 ```
 
-#### `some` | [🔝](#methods)
+#### `some` | [🔝](#method-reference)
 
 Returns `true` if at least one item accepted by the given callback. Short-circuits iteration once an item is accepted.
 
@@ -269,7 +277,7 @@ Returns `true` if at least one item accepted by the given callback. Short-circui
 Lazy<T>.some(accept: (t: T) => unknown): boolean
 ```
 
-#### `every` | [🔝](#methods)
+#### `every` | [🔝](#method-reference)
 
 Returns `true` only if all items are accepted by the given callback. Short-circuits iteration once an item is rejected.
 

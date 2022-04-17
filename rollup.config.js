@@ -1,20 +1,20 @@
 import babel from '@rollup/plugin-babel';
 import resolve from '@rollup/plugin-node-resolve';
 
-const input = './index.js';
-
 // please update the package.json to reflect any changes here
 const bundles = createBundles({
   // the `unpkg` UMD bundle (for usage without a bundler)
   unpkg: {
     format: 'umd',
-    targets: 'defaults',
+    targets: 'defaults and not IE 11',
+    input: './index.js',
     output: { name: 'Lazy' },
   },
   // legacy node bundle (note: this is currently used in jest-resolve)
   main: {
     format: 'cjs',
     targets: 'node 4',
+    input: './index.regenerator.js',
     output: { exports: 'auto' },
   },
   // the `module` bundle that should support older bundlers that used this entry
@@ -24,6 +24,7 @@ const bundles = createBundles({
     // `node 6` is a good target because it's closest to es2015 specified in the
     // rollup spec: https://github.com/rollup/rollup/wiki/pkg.module
     targets: 'node 6',
+    input: './index.js',
   },
   exports: {
     // `node 12` is a good target because:
@@ -43,10 +44,12 @@ const bundles = createBundles({
       format: 'es',
       targets: 'node 12',
       extension: 'mjs',
+      input: './index.js',
     },
     require: {
       format: 'cjs',
       targets: 'node 12',
+      input: './index.js',
       output: { exports: 'auto' },
     },
   },
@@ -54,7 +57,7 @@ const bundles = createBundles({
 
 function createBundles(config, parents = []) {
   if ('targets' in config) {
-    const { format, extension = 'js', output, targets } = config;
+    const { format, extension = 'js', output, input, targets } = config;
 
     return [
       {
@@ -66,7 +69,7 @@ function createBundles(config, parents = []) {
           ...output,
         },
         plugins: [
-          resolve({ modulesOnly: true }),
+          resolve(),
           babel({
             babelrc: false,
             configFile: false,

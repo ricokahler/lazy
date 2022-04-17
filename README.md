@@ -19,7 +19,7 @@ An example of this would be a `reverse()` method. If this lib implemented a `rev
 Since we have to buffer the items into an array anyway, there's not all that much difference between:
 
 ```js
-Lazy.from(iterable).reverse(); // not implemented
+Lazy.from(iterable).reverse(); // not implemented!
 ```
 
 and
@@ -36,8 +36,6 @@ In order to take full advantage of the short-circuiting nature of call-by-need/l
 
 1.  terminate in short-circuiting method
 2.  take (via `take` or `takeWhile`) a subset of the iterable
-
-<!-- TODO: add examples -->
 
 ## Installation
 
@@ -88,7 +86,7 @@ More docs soon.
 1. Conversion
    1. `from`
    2. `to`
-2. Chaining
+2. Chainable
    1. `map`
    1. `filter`
    1. `flat`
@@ -103,3 +101,13 @@ More docs soon.
    3. `includes`
    4. `some`
    5. `every`
+
+### Conversion
+
+#### `Lazy.from`
+
+```ts
+Lazy<T>.from<T>(iterable: Iterable<T>): Lazy<T>
+```
+
+Takes in any iterable and returns it wrapped in a `Lazy` with chainable `Lazy` methods.

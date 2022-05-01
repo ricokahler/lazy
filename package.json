@@ -42,7 +42,7 @@
     "lint": "eslint ./index.js && tsc"
   },
   "devDependencies": {
-    "@babel/preset-env": "7.16.11",
+    "@babel/preset-env": "7.17.10",
     "@babel/preset-typescript": "7.16.7",
     "@rollup/plugin-babel": "5.3.1",
     "@rollup/plugin-node-resolve": "13.2.1",

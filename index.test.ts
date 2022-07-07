@@ -1,5 +1,12 @@
 import Lazy from './index';
 
+async function* asyncGenerator<T>(iterable: Iterable<T>) {
+  for await (const i of iterable) {
+    await new Promise((resolve) => process.nextTick(resolve));
+    yield i;
+  }
+}
+
 describe('Lazy', () => {
   it('has static methods and instance methods variants', () => {
     const methods = [
@@ -11,6 +18,7 @@ describe('Lazy', () => {
       'flatMap',
       'includes',
       'map',
+      'scan',
       'skip',
       'skipWhile',
       'some',
@@ -35,6 +43,34 @@ describe('Lazy', () => {
     const lazyTo = lazyMap((x) => x + 1).to;
     expect(lazyTo(Array)).toEqual([2, 3, 4]);
   });
+
+  it('implements the iterator protocol conditionally', () => {
+    const lazy = Lazy.from([1, 2, 3]);
+
+    expect(typeof lazy[Symbol.iterator]).toBe('function');
+    expect(typeof lazy[Symbol.asyncIterator]).not.toBe('function');
+
+    const items: number[] = [];
+    for (const i of lazy) {
+      items.push(i);
+    }
+
+    expect(items).toEqual([1, 2, 3]);
+  });
+
+  it('implements the async iterator protocol', async () => {
+    const lazy = Lazy.from(asyncGenerator([1, 2, 3]));
+
+    expect(typeof lazy[Symbol.iterator]).not.toBe('function');
+    expect(typeof lazy[Symbol.asyncIterator]).toBe('function');
+
+    const items: number[] = [];
+    for await (const i of lazy) {
+      items.push(i);
+    }
+
+    expect(items).toEqual([1, 2, 3]);
+  });
 });
 
 describe('Lazy.from', () => {
@@ -50,6 +86,28 @@ describe('Lazy.from', () => {
         .filter((getter) => getter() >= 3)
         .first()?.(),
     ).toBe(3);
+
+    expect(getter1).toHaveBeenCalled();
+    expect(getter2).toHaveBeenCalled();
+    expect(getter3).toHaveBeenCalled();
+    expect(getter4).not.toHaveBeenCalled();
+    expect(getter5).not.toHaveBeenCalled();
+  });
+
+  it('takes in async iterables and returns a wrapper with chainable methods', async () => {
+    const getter1 = jest.fn(() => 1);
+    const getter2 = jest.fn(() => 2);
+    const getter3 = jest.fn(() => 3);
+    const getter4 = jest.fn(() => 4);
+    const getter5 = jest.fn(() => 5);
+
+    const getter = await Lazy.from(
+      asyncGenerator([getter1, getter2, getter3, getter4, getter5]),
+    )
+      .filter((getter) => getter() >= 3)
+      .first();
+
+    expect(getter?.()).toBe(3);
 
     expect(getter1).toHaveBeenCalled();
     expect(getter2).toHaveBeenCalled();
@@ -122,23 +180,98 @@ describe('takeWhile', () => {
 });
 
 describe('map', () => {
-  it('yields the result of the functor over each item', () => {
-    expect(
-      Lazy.from([1, 2, 3])
-        .map((n) => n + 1)
-        .to(Array),
-    ).toEqual([2, 3, 4]);
+  describe('sync', () => {
+    it('yields the result of the functor over each item', () => {
+      expect(
+        Lazy.from([1, 2, 3])
+          .map((n) => n + 1)
+          .to(Array),
+      ).toEqual([2, 3, 4]);
+    });
+  });
+
+  describe('async', () => {
+    it('yields the result of the functor over each item', async () => {
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3]))
+          .map((n) => n + 1)
+          .to(Array),
+      ).toEqual([2, 3, 4]);
+    });
+  });
+});
+
+describe('filter', () => {
+  describe('sync', () => {
+    it('removes rejected items from the resulting iterable', () => {
+      expect(
+        Lazy.from([1, 2, 3])
+          .filter((n) => n > 1)
+          .to(Array),
+      ).toEqual([2, 3]);
+    });
+  });
+
+  describe('async', () => {
+    it('removes rejected items from the resulting iterable', async () => {
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3]))
+          .filter((n) => n > 1)
+          .to(Array),
+      ).toEqual([2, 3]);
+    });
+  });
+});
+
+describe('scan', () => {
+  describe('sync', () => {
+    it('yields each intermediate accumulator created in the reducer', () => {
+      expect(
+        Lazy.from([1, 2, 3, 4, 5])
+          .scan((acc, n) => acc + n, 0)
+          .to(Array),
+      ).toEqual([1, 3, 6, 10, 15]);
+    });
+  });
+
+  describe('async', () => {
+    it('yields each intermediate accumulator created in the reducer', async () => {
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3, 4, 5]))
+          .scan((acc, n) => acc + n, 0)
+          .to(Array),
+      ).toEqual([1, 3, 6, 10, 15]);
+    });
   });
 });
 
 describe('flat', () => {
-  it('yields the inner subitems of nested iterables, flattening the iterable', () => {
-    expect(
-      Lazy.from([[1], 2, [[3]]])
-        .flat(2)
-        .map((n) => n + 1)
-        .to(Array),
-    ).toEqual([2, 3, 4]);
+  describe('sync', () => {
+    it('yields the inner subitems of nested iterables, flattening the iterable', () => {
+      expect(
+        Lazy.from([[1], 2, [[3]]])
+          .flat(2)
+          .map((n) => n + 1)
+          .to(Array),
+      ).toEqual([2, 3, 4]);
+    });
+  });
+
+  describe('async', () => {
+    it('yields the inner subitems of nested iterables, flattening the iterable', async () => {
+      expect(
+        await Lazy.from(
+          asyncGenerator([
+            asyncGenerator([1]),
+            2,
+            asyncGenerator([asyncGenerator([3])]),
+          ]),
+        )
+          .flat(2)
+          .map((n) => n + 1)
+          .to(Array),
+      ).toEqual([2, 3, 4]);
+    });
   });
 });
 
@@ -160,31 +293,62 @@ describe('flatMap', () => {
 });
 
 describe('first', () => {
-  it('returns the first yielded item', () => {
-    expect(Lazy.from([1, 2, 3]).first()).toBe(1);
+  describe('sync', () => {
+    it('returns the first yielded item', () => {
+      expect(Lazy.from([1, 2, 3]).first()).toBe(1);
+    });
+
+    it('returns undefined if the iterator is done', () => {
+      expect(
+        Lazy.from([1, 2, 3])
+          .filter((n) => n > 5)
+          .first(),
+      ).toBe(undefined);
+    });
+
+    it('stops parent iteration', () => {
+      const toNumber = jest.fn((s: string) => parseInt(s, 10));
+      const greatThanOrEqualTo3 = jest.fn((n: number) => n >= 3);
+      expect(
+        Lazy.from(['1', '2', '3', '4', '5'])
+          .map(toNumber)
+          .filter(greatThanOrEqualTo3)
+          .first(),
+      ).toBe(3);
+
+      // notice that eager evaluation would've made this have been called 5 times
+      expect(toNumber).toHaveBeenCalledTimes(3);
+      expect(greatThanOrEqualTo3).toHaveBeenCalledTimes(3);
+    });
   });
 
-  it('returns undefined if the iterator is done', () => {
-    expect(
-      Lazy.from([1, 2, 3])
-        .filter((n) => n > 5)
-        .first(),
-    ).toBe(undefined);
-  });
+  describe('async', () => {
+    it('returns the first yielded item', async () => {
+      expect(await Lazy.from(asyncGenerator([1, 2, 3])).first()).toBe(1);
+    });
 
-  it('stops parent iteration', () => {
-    const toNumber = jest.fn((s: string) => parseInt(s, 10));
-    const greatThanOrEqualTo3 = jest.fn((n: number) => n >= 3);
-    expect(
-      Lazy.from(['1', '2', '3', '4', '5'])
-        .map(toNumber)
-        .filter(greatThanOrEqualTo3)
-        .first(),
-    ).toBe(3);
+    it('returns undefined if the iterator is done', async () => {
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3]))
+          .filter((n) => n > 5)
+          .first(),
+      ).toBe(undefined);
+    });
 
-    // notice that eager evaluation would've made this have been called 5 times
-    expect(toNumber).toHaveBeenCalledTimes(3);
-    expect(greatThanOrEqualTo3).toHaveBeenCalledTimes(3);
+    it('stops parent iteration', async () => {
+      const toNumber = jest.fn((s: string) => parseInt(s, 10));
+      const greatThanOrEqualTo3 = jest.fn((n: number) => n >= 3);
+      expect(
+        await Lazy.from(asyncGenerator(['1', '2', '3', '4', '5']))
+          .map(toNumber)
+          .filter(greatThanOrEqualTo3)
+          .first(),
+      ).toBe(3);
+
+      // notice that eager evaluation would've made this have been called 5 times
+      expect(toNumber).toHaveBeenCalledTimes(3);
+      expect(greatThanOrEqualTo3).toHaveBeenCalledTimes(3);
+    });
   });
 });
 
@@ -238,84 +402,189 @@ describe('includes', () => {
 });
 
 describe('some', () => {
-  it('returns true if any item is accepted by the predicate', () => {
-    expect(Lazy.from([1, 2, 3, 4, 5]).some((n) => n >= 5)).toBe(true);
+  describe('sync', () => {
+    it('returns true if any item is accepted by the predicate', () => {
+      expect(Lazy.from([1, 2, 3, 4, 5]).some((n) => n >= 5)).toBe(true);
+    });
+
+    it('returns false if no items are accepted by the predicate', () => {
+      expect(Lazy.from([1, 2, 3, 4, 5]).some((n) => n > 5)).toBe(false);
+    });
+
+    it('stops parent iteration when the first value is accepted', () => {
+      const identity = jest.fn((n: number) => n);
+
+      expect(
+        Lazy.from([1, 2, 3, 4, 5])
+          .map(identity)
+          .some((n) => n >= 3),
+      ).toBe(true);
+
+      // notice that eager evaluation would've made this have been called 5 times
+      expect(identity).toHaveBeenCalledTimes(3);
+    });
   });
 
-  it('returns false if no items are accepted by the predicate', () => {
-    expect(Lazy.from([1, 2, 3, 4, 5]).some((n) => n > 5)).toBe(false);
-  });
+  describe('async', () => {
+    it('returns true if any item is accepted by the predicate', async () => {
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3, 4, 5])).some((n) => n >= 5),
+      ).toBe(true);
+    });
 
-  it('stops parent iteration when the first value is accepted', () => {
-    const identity = jest.fn((n: number) => n);
+    it('returns false if no items are accepted by the predicate', async () => {
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3, 4, 5])).some((n) => n > 5),
+      ).toBe(false);
+    });
 
-    expect(
-      Lazy.from([1, 2, 3, 4, 5])
-        .map(identity)
-        .some((n) => n >= 3),
-    ).toBe(true);
+    it('stops parent iteration when the first value is accepted', async () => {
+      const identity = jest.fn((n: number) => n);
 
-    // notice that eager evaluation would've made this have been called 5 times
-    expect(identity).toHaveBeenCalledTimes(3);
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3, 4, 5]))
+          .map(identity)
+          .some((n) => n >= 3),
+      ).toBe(true);
+
+      // notice that eager evaluation would've made this have been called 5 times
+      expect(identity).toHaveBeenCalledTimes(3);
+    });
   });
 });
 
 describe('every', () => {
-  it('returns true if all items are accepted by the predicate', () => {
-    expect(Lazy.from([1, 2, 3, 4, 5]).every((n) => n <= 5)).toBe(true);
+  describe('sync', () => {
+    it('returns true if all items are accepted by the predicate', () => {
+      expect(Lazy.from([1, 2, 3, 4, 5]).every((n) => n <= 5)).toBe(true);
+    });
+    it('returns false if any item is rejected by the predicate', () => {
+      expect(Lazy.from([1, 2, 3, 4, 5]).every((n) => n < 5)).toBe(false);
+    });
+
+    it('stops parent iteration when the first value is rejected', () => {
+      const identity = jest.fn((n: number) => n);
+
+      expect(
+        Lazy.from([1, 2, 3, 4, 5])
+          .map(identity)
+          .every((n) => n < 3),
+      ).toBe(false);
+
+      // notice that eager evaluation would've made this have been called 5 times
+      expect(identity).toHaveBeenCalledTimes(3);
+    });
   });
-  it('returns false if any item is rejected by the predicate', () => {
-    expect(Lazy.from([1, 2, 3, 4, 5]).every((n) => n < 5)).toBe(false);
-  });
 
-  it('stops parent iteration when the first value is rejected', () => {
-    const identity = jest.fn((n: number) => n);
+  describe('async', () => {
+    it('returns true if all items are accepted by the predicate', async () => {
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3, 4, 5])).every((n) => n <= 5),
+      ).toBe(true);
+    });
+    it('returns false if any item is rejected by the predicate', async () => {
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3, 4, 5])).every((n) => n < 5),
+      ).toBe(false);
+    });
 
-    expect(
-      Lazy.from([1, 2, 3, 4, 5])
-        .map(identity)
-        .every((n) => n < 3),
-    ).toBe(false);
+    it('stops parent iteration when the first value is rejected', async () => {
+      const identity = jest.fn((n: number) => n);
 
-    // notice that eager evaluation would've made this have been called 5 times
-    expect(identity).toHaveBeenCalledTimes(3);
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3, 4, 5]))
+          .map(identity)
+          .every((n) => n < 3),
+      ).toBe(false);
+
+      // notice that eager evaluation would've made this have been called 5 times
+      expect(identity).toHaveBeenCalledTimes(3);
+    });
   });
 });
 
 describe('to', () => {
-  it("if present, passes the iterable through object's `from` method", () => {
-    class ExampleFromable {
-      static from = jest.fn(
-        Array.from.bind(Array) as (
-          iterable: Iterable<unknown>,
-        ) => Array<unknown>,
+  describe('sync', () => {
+    it("if present, passes the iterable through object's `from` method", () => {
+      class ExampleFromable {
+        static from = jest.fn(
+          Array.from.bind(Array) as (
+            iterable: Iterable<unknown>,
+          ) => Array<unknown>,
+        );
+
+        constructor() {
+          throw new Error("don't call this");
+        }
+      }
+
+      expect(Lazy.from([1, 2, 3]).to(ExampleFromable)).toEqual([1, 2, 3]);
+      expect(ExampleFromable.from).toHaveBeenCalled();
+    });
+
+    it('works with itself', () => {
+      expect(Lazy.from([1, 2, 3]).to(Lazy).to(Array)).toEqual([1, 2, 3]);
+    });
+
+    it('otherwise, constructs an instance passing the iterable as the argument', () => {
+      class ExampleConstructable {
+        constructor(public iterable: Iterable<unknown>) {}
+
+        toArray() {
+          return Array.from(this.iterable);
+        }
+      }
+
+      const exampleConstructable = Lazy.from([1, 2, 3]).to(
+        ExampleConstructable,
       );
 
-      constructor() {
-        throw new Error("don't call this");
-      }
-    }
-
-    expect(Lazy.from([1, 2, 3]).to(ExampleFromable)).toEqual([1, 2, 3]);
-    expect(ExampleFromable.from).toHaveBeenCalled();
+      expect(exampleConstructable).toBeInstanceOf(ExampleConstructable);
+      expect(exampleConstructable.toArray()).toEqual([1, 2, 3]);
+    });
   });
 
-  it('works with itself', () => {
-    expect(Lazy.from([1, 2, 3]).to(Lazy).to(Array)).toEqual([1, 2, 3]);
-  });
+  describe('async', () => {
+    it("if present, passes the iterable through object's `from` method", async () => {
+      class ExampleFromable {
+        static from = jest.fn(
+          Array.from.bind(Array) as (
+            iterable: Iterable<unknown>,
+          ) => Array<unknown>,
+        );
 
-  it('otherwise, constructs an instance passing the iterable as the argument', () => {
-    class ExampleConstructable {
-      constructor(public iterable: Iterable<unknown>) {}
-
-      toArray() {
-        return Array.from(this.iterable);
+        constructor() {
+          throw new Error("don't call this");
+        }
       }
-    }
 
-    const exampleConstructable = Lazy.from([1, 2, 3]).to(ExampleConstructable);
+      expect(
+        await Lazy.from(asyncGenerator([1, 2, 3])).to(ExampleFromable),
+      ).toEqual([1, 2, 3]);
+      expect(ExampleFromable.from).toHaveBeenCalled();
+    });
 
-    expect(exampleConstructable).toBeInstanceOf(ExampleConstructable);
-    expect(exampleConstructable.toArray()).toEqual([1, 2, 3]);
+    it('works with itself', async () => {
+      expect(
+        (await Lazy.from(asyncGenerator([1, 2, 3])).to(Lazy)).to(Array),
+      ).toEqual([1, 2, 3]);
+    });
+
+    it('otherwise, constructs an instance passing the iterable as the argument', async () => {
+      class ExampleConstructable {
+        constructor(public iterable: Iterable<unknown>) {}
+
+        toArray() {
+          return Array.from(this.iterable);
+        }
+      }
+
+      const exampleConstructable = await Lazy.from(
+        asyncGenerator([1, 2, 3]),
+      ).to(ExampleConstructable);
+
+      expect(exampleConstructable).toBeInstanceOf(ExampleConstructable);
+      expect(exampleConstructable.toArray()).toEqual([1, 2, 3]);
+    });
   });
 });

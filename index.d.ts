@@ -23,20 +23,52 @@ type FlatIterable<TIterable, TDepth extends number> = {
         // prettier-ignore
         [-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20][TDepth]
       >
+    : TIterable extends AsyncIterable<infer InnerItr>
+    ? FlatIterable<
+        InnerItr,
+        // prettier-ignore
+        [-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20][TDepth]
+      >
     : TIterable;
 }[TDepth extends -1 ? 'done' : 'recur'];
+
+interface AsyncLazy<T> extends Lazy<T>, AsyncIterable<T> {
+  iterable: undefined;
+  asyncIterable: AsyncIterable<T>;
+}
+
+interface SyncLazy<T> extends Lazy<T>, Iterable<T> {
+  iterable: Iterable<T>;
+  asyncIterable: undefined;
+}
+
+type InferLazyKind<
+  TClass extends Lazy<any>,
+  TValue,
+> = TClass extends AsyncLazy<any>
+  ? AsyncLazy<TValue>
+  : TClass extends SyncLazy<TValue>
+  ? SyncLazy<TValue>
+  : Lazy<TValue>;
+
+type ConditionalPromise<
+  TClass extends Lazy<any>,
+  TValue,
+> = TClass extends AsyncLazy<any> ? Promise<TValue> : TValue;
 
 /**
  * A small, _useful_ set of methods for lazy iteration of iterables
  */
-declare class Lazy<T> implements Iterable<T> {
-  public iterable: Iterable<T>;
+declare class Lazy<T> {
+  public iterable?: Iterable<T>;
+  public asyncIterable?: AsyncIterable<T>;
 
   /**
    * Takes in any iterable and returns it wrapped in a `Lazy` with chainable
    * `Lazy` methods
    */
-  static from<T>(iterable: Iterable<T>): Lazy<T>;
+  static from<T>(iterable: Iterable<T>): SyncLazy<T>;
+  static from<T>(asyncIterable: AsyncIterable<T>): AsyncLazy<T>;
 
   constructor(iterable?: Iterable<T> | null);
 
@@ -52,12 +84,44 @@ declare class Lazy<T> implements Iterable<T> {
     iterable: Iterable<T>,
     accept: (t: T) => unknown,
   ): Iterable<T>;
+  static filter<T, R extends T>(
+    asyncIterable: AsyncIterable<T>,
+    accept: (t: T) => t is R,
+  ): AsyncIterable<R>;
+  static filter<T>(
+    asyncIterable: AsyncIterable<T>,
+    accept: (t: T) => unknown,
+  ): AsyncIterable<T>;
 
   /**
    * Takes in an iterable and returns an iterable generator that yields the
    * result of the callback function on each item from the input iterable.
    */
   static map<T, R>(iterable: Iterable<T>, mapper: (t: T) => R): Iterable<R>;
+  static map<T, R>(
+    asyncIterable: AsyncIterable<T>,
+    mapper: (t: T) => R,
+  ): AsyncIterable<R>;
+
+  /**
+   * Takes in an iterable, a reducer, and an initial accumulator value and
+   * returns another iterable that yields every intermediate accumulator created
+   * in the reducer for each item in the input iterable.
+   *
+   * Useful for encapsulating state over time.
+   *
+   * **Note:** the initial accumulator value is required.
+   */
+  static scan<T, TAccumulator>(
+    iterable: Iterable<T>,
+    reducer: (acc: TAccumulator, item: T) => TAccumulator,
+    initialAccumulator: TAccumulator,
+  ): Iterable<TAccumulator>;
+  static scan<T, TAccumulator>(
+    asyncIterable: AsyncIterable<T>,
+    reducer: (acc: TAccumulator, item: T) => TAccumulator,
+    initialAccumulator: TAccumulator,
+  ): AsyncIterable<TAccumulator>;
 
   /**
    * Returns a new iterable with all sub-iterable items yielded into it
@@ -77,6 +141,10 @@ declare class Lazy<T> implements Iterable<T> {
     iterable: T,
     mapper: (value: T) => R | Iterable<R>,
   ): Iterable<R>;
+  static flatMap<T, R>(
+    asyncIterable: T,
+    mapper: (value: T) => R | AsyncIterable<R>,
+  ): AsyncIterable<R>;
 
   /**
    * Yields the first `n` items of the given iterable and stops further
@@ -89,6 +157,7 @@ declare class Lazy<T> implements Iterable<T> {
    * ```
    */
   static take<T>(iterable: Iterable<T>, n: number): Iterable<T>;
+  static take<T>(asyncIterable: AsyncIterable<T>, n: number): AsyncIterable<T>;
 
   /**
    * Yields while the callback function accepts the current item from the given
@@ -111,6 +180,14 @@ declare class Lazy<T> implements Iterable<T> {
     iterable: Iterable<T>,
     accept: (t: T) => unknown,
   ): Iterable<T>;
+  static takeWhile<T, R extends T>(
+    asyncIterable: AsyncIterable<T>,
+    accept: (t: T) => t is R,
+  ): AsyncIterable<R>;
+  static takeWhile<T>(
+    asyncIterable: AsyncIterable<T>,
+    accept: (t: T) => unknown,
+  ): AsyncIterable<T>;
 
   /**
    * Skips over the first `n` items of the given iterable then yields the rest.
@@ -122,6 +199,7 @@ declare class Lazy<T> implements Iterable<T> {
    * ```
    */
   static skip<T>(iterable: Iterable<T>, n: number): Iterable<T>;
+  static skip<T>(iterable: AsyncIterable<T>, n: number): AsyncIterable<T>;
 
   /**
    * Skips over the items while the given callback accepts the current item from
@@ -139,18 +217,24 @@ declare class Lazy<T> implements Iterable<T> {
     iterable: Iterable<T>,
     accept: (t: T) => unknown,
   ): Iterable<T>;
+  static skipWhile<T>(
+    iterable: AsyncIterable<T>,
+    accept: (t: T) => unknown,
+  ): AsyncIterable<T>;
 
   /**
    * Determines whether an iterable includes a certain value using `===`
    * comparison. Short-circuits iteration once the value is found.
    */
   static includes<T>(iterable: Iterable<T>, value: T): boolean;
+  static includes<T>(iterable: AsyncIterable<T>, value: T): Promise<boolean>;
 
   /**
    * Returns the first item of an iterable or `undefined` if the iterable is
    * done/exhausted.
    */
   static first<T>(iterable: Iterable<T>): T | undefined;
+  static first<T>(iterable: AsyncIterable<T>): Promise<T | undefined>;
 
   /**
    * Returns the first item accepted by the given callback. Short-circuits
@@ -164,18 +248,34 @@ declare class Lazy<T> implements Iterable<T> {
     iterable: Iterable<T>,
     accept: (t: T) => unknown,
   ): T | undefined;
+  static find<T, R extends T>(
+    iterable: AsyncIterable<T>,
+    accept: (t: T) => t is R,
+  ): Promise<R | undefined>;
+  static find<T>(
+    iterable: AsyncIterable<T>,
+    accept: (t: T) => unknown,
+  ): Promise<T | undefined>;
 
   /**
    * Returns `true` if at least one item accepted by the given callback.
    * Short-circuits iteration once an item is accepted.
    */
   static some<T>(iterable: Iterable<T>, accept: (t: T) => unknown): boolean;
+  static some<T>(
+    iterable: AsyncIterable<T>,
+    accept: (t: T) => unknown,
+  ): Promise<boolean>;
 
   /**
    * Returns `true` only if all items are accepted by the given callback.
    * Short-circuits iteration once an item is rejected.
    */
   static every<T>(iterable: Iterable<T>, accept: (t: T) => unknown): boolean;
+  static every<T>(
+    iterable: AsyncIterable<T>,
+    accept: (t: T) => unknown,
+  ): Promise<boolean>;
 
   /**
    * Writes the iterable into another data structure. Accepts an object with
@@ -192,42 +292,75 @@ declare class Lazy<T> implements Iterable<T> {
    *   return new constructorOrFromable(iterable);
    * }
    * ```
+   *
+   * Note: if used with an async iterable, it will await and buffer all items
+   * into an array first.
    */
+
+  // SETS
+  // prettier-ignore
   static to<T>(iterable: Iterable<T>, setConstructor: SetConstructor): Set<T>;
-  static to<T>(
-    iterable: Iterable<T>,
-    mapConstructor: MapConstructor,
-  ): Map<FirstTupleItem<T>, SecondTupleItem<T>>;
-  static to<T>(
-    iterable: Iterable<T>,
-    lazyConstructor: LazyConstructor,
-  ): Lazy<T>;
+  // prettier-ignore
+  static to<T>(iterable: AsyncIterable<T>, setConstructor: SetConstructor): Promise<Set<T>>;
+
+  // MAPS
+  // prettier-ignore
+  static to<T>(iterable: Iterable<T>, mapConstructor: MapConstructor): Map<FirstTupleItem<T>, SecondTupleItem<T>>;
+  // prettier-ignore
+  static to<T>(iterable: AsyncIterable<T>, mapConstructor: MapConstructor): Promise<Map<FirstTupleItem<T>, SecondTupleItem<T>>>;
+
+  // ARRAYS
+  // prettier-ignore
   static to<T>(iterable: Iterable<T>, arrayConstructor: ArrayConstructor): T[];
+  // prettier-ignore
+  static to<T>(iterable: AsyncIterable<T>, arrayConstructor: ArrayConstructor): Promise<T[]>;
+
+  // LAZY
+  // prettier-ignore
+  static to<T>(iterable: Iterable<T>, lazyConstructor: LazyConstructor): Lazy<T>;
+  // prettier-ignore
+  static to<T>(iterable: AsyncIterable<T>, lazyConstructor: LazyConstructor): Promise<Lazy<T>>;
+
   // TODO: these overloads don't generically initialize a parameterized instance
-  static to<T, TStaticFrom extends StaticFrom>(
-    iterable: Iterable<T>,
-    staticFrom: TStaticFrom,
-  ): TStaticFrom extends StaticFrom<infer TInstance> ? TInstance : never;
-  static to<T, TConstructor extends IterableArgumentConstructor>(
-    iterable: Iterable<T>,
-    constructor: TConstructor,
-  ): TConstructor extends IterableArgumentConstructor<infer TInstance>
-    ? TInstance
-    : never;
+  // STATIC FROM
+  // prettier-ignore
+  static to<T, TStaticFrom extends StaticFrom>(iterable: Iterable<T>, staticFrom: TStaticFrom): TStaticFrom extends StaticFrom<infer TInstance> ? TInstance : never;
+  // prettier-ignore
+  static to<T, TStaticFrom extends StaticFrom>(iterable: AsyncIterable<T>, staticFrom: TStaticFrom): TStaticFrom extends StaticFrom<infer TInstance> ? Promise<TInstance> : never;
+
+  // CONSTRUCTOR
+  // prettier-ignore
+  static to<T, TConstructor extends IterableArgumentConstructor>(iterable: Iterable<T>, constructor: TConstructor): TConstructor extends IterableArgumentConstructor<infer TInstance> ? TInstance : never;
+  // prettier-ignore
+  static to<T, TConstructor extends IterableArgumentConstructor>(iterable: AsyncIterable<T>, constructor: TConstructor): TConstructor extends IterableArgumentConstructor<infer TInstance> ? Promise<TInstance> : never;
 
   // NOTE: ensure the JS doc comments match the ones exactly above
   /**
    * Takes in an iterable and returns an iterable generator that yields the
    * accepted elements of the given callback function.
    */
-  filter<R extends T>(accept: (t: T) => t is R): Lazy<R>;
-  filter(accept: (t: T) => unknown): Lazy<T>;
+  filter<R extends T>(accept: (t: T) => t is R): InferLazyKind<this, R>;
+  filter(accept: (t: T) => unknown): InferLazyKind<this, T>;
 
   /**
    * Takes in an iterable and returns an iterable generator that yields the
    * result of the callback function on each item from the input iterable.
    */
-  map<R>(mapper: (t: T) => R): Lazy<R>;
+  map<R>(mapper: (t: T) => R): InferLazyKind<this, R>;
+
+  /**
+   * Takes in an iterable, a reducer, and an initial accumulator value and
+   * returns another iterable that yields every intermediate accumulator created
+   * in the reducer for each item in the input iterable.
+   *
+   * Useful for encapsulating state over time.
+   *
+   * **Note:** the initial accumulator value is required.
+   */
+  scan<TAccumulator>(
+    reducer: (acc: TAccumulator, t: T) => TAccumulator,
+    initialAccumulator: TAccumulator,
+  ): InferLazyKind<this, TAccumulator>;
 
   /**
    * Returns a new iterable with all sub-iterable items yielded into it
@@ -235,14 +368,14 @@ declare class Lazy<T> implements Iterable<T> {
    */
   flat<TDepth extends number = 1>(
     depth?: TDepth,
-  ): Lazy<FlatIterable<T, TDepth>>;
+  ): InferLazyKind<this, FlatIterable<T, TDepth>>;
 
   /**
    * Calls the result of the given callback function on each item of the parent
    * iterable. Then, yields the result of each into a flatted iterable. This is
    * identical to a map followed by flat with depth 1.
    */
-  flatMap<R>(mapper: (value: T) => R | Iterable<R>): Lazy<R>;
+  flatMap<R>(mapper: (value: T) => R | Iterable<R>): InferLazyKind<this, R>;
 
   /**
    * Yields the first `n` items of the given iterable and stops further
@@ -254,7 +387,7 @@ declare class Lazy<T> implements Iterable<T> {
    * console.log(result); // [1, 2, 3]
    * ```
    */
-  take(n: number): Lazy<T>;
+  take(n: number): InferLazyKind<this, T>;
 
   /**
    * Yields while the callback function accepts the current item from the given
@@ -269,8 +402,8 @@ declare class Lazy<T> implements Iterable<T> {
    * console.log(result); // [1, 2]
    * ```
    */
-  takeWhile<R extends T>(accept: (t: T) => t is R): Lazy<R>;
-  takeWhile(accept: (t: T) => unknown): Lazy<T>;
+  takeWhile<R extends T>(accept: (t: T) => t is R): InferLazyKind<this, R>;
+  takeWhile(accept: (t: T) => unknown): InferLazyKind<this, T>;
 
   /**
    * Skips over the first `n` items of the given iterable then yields the rest.
@@ -281,7 +414,7 @@ declare class Lazy<T> implements Iterable<T> {
    * console.log(result); // [3, 4, 5]
    * ```
    */
-  skip(n: number): Lazy<T>;
+  skip(n: number): InferLazyKind<this, T>;
 
   /**
    * Skips over the items while the given callback accepts the current item from
@@ -295,38 +428,40 @@ declare class Lazy<T> implements Iterable<T> {
    * console.log(result); // [3, 4, 5, 0, 1]
    * ```
    */
-  skipWhile(accept: (t: T) => unknown): Lazy<T>;
+  skipWhile(accept: (t: T) => unknown): InferLazyKind<this, T>;
 
   /**
    * Determines whether an iterable includes a certain value using `===`
    * comparison. Short-circuits iteration once the value is found.
    */
-  includes(t: T): boolean;
+  includes(t: T): ConditionalPromise<this, boolean>;
 
   /**
    * Returns the first item of an iterable or `undefined` if the iterable is
    * done/exhausted.
    */
-  first(): T | undefined;
+  first(): ConditionalPromise<this, T | undefined>;
 
   /**
    * Returns the first item accepted by the given callback. Short-circuits
    * iteration once an item is found.
    */
-  find<R extends T>(accept: (t: T) => t is R): R | undefined;
-  find(accept: (t: T) => unknown): T | undefined;
+  find<R extends T>(
+    accept: (t: T) => t is R,
+  ): ConditionalPromise<this, R | undefined>;
+  find(accept: (t: T) => unknown): ConditionalPromise<this, T | undefined>;
 
   /**
    * Returns `true` if at least one item accepted by the given callback.
    * Short-circuits iteration once an item is accepted.
    */
-  some(accept: (t: T) => unknown): boolean;
+  some(accept: (t: T) => unknown): ConditionalPromise<this, boolean>;
 
   /**
    * Returns `true` only if all items are accepted by the given callback.
    * Short-circuits iteration once an item is rejected.
    */
-  every(accept: (t: T) => unknown): boolean;
+  every(accept: (t: T) => unknown): ConditionalPromise<this, boolean>;
 
   /**
    * Writes the iterable into another data structure. Accepts an object with
@@ -343,24 +478,23 @@ declare class Lazy<T> implements Iterable<T> {
    *   return new constructorOrFromable(iterable);
    * }
    * ```
+   *
+   * Note: if used with an async iterable, it will await and buffer all items
+   * into an array first.
    */
-  to(setConstructor: SetConstructor): Set<T>;
-  to(
-    mapConstructor: MapConstructor,
-  ): Map<FirstTupleItem<T>, SecondTupleItem<T>>;
-  to(lazyConstructor: LazyConstructor): Lazy<T>;
-  to(arrayConstructor: ArrayConstructor): T[];
+  // prettier-ignore
+  to(setConstructor: SetConstructor): ConditionalPromise<this, Set<T>>;
+  // prettier-ignore
+  to(mapConstructor: MapConstructor): ConditionalPromise<this, Map<FirstTupleItem<T>, SecondTupleItem<T>>>;
+  // prettier-ignore
+  to(lazyConstructor: LazyConstructor): ConditionalPromise<this, Lazy<T>>;
+  // prettier-ignore
+  to(arrayConstructor: ArrayConstructor): ConditionalPromise<this, T[]>;
   // TODO: these overloads don't generically initialize a parameterized instance
-  to<TStaticFrom extends StaticFrom>(
-    staticFrom: TStaticFrom,
-  ): TStaticFrom extends StaticFrom<infer TInstance> ? TInstance : never;
-  to<TConstructor extends IterableArgumentConstructor>(
-    constructor: TConstructor,
-  ): TConstructor extends IterableArgumentConstructor<infer TInstance>
-    ? TInstance
-    : never;
-
-  [Symbol.iterator](): Iterator<T>;
+  // prettier-ignore
+  to<TStaticFrom extends StaticFrom>(staticFrom: TStaticFrom): TStaticFrom extends StaticFrom<infer TInstance> ? ConditionalPromise<this, TInstance> : never;
+  // prettier-ignore
+  to<TConstructor extends IterableArgumentConstructor>(constructor: TConstructor): TConstructor extends IterableArgumentConstructor<infer TInstance> ? ConditionalPromise<this, TInstance> : never;
 }
 
 export = Lazy;

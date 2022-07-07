@@ -1,6 +1,6 @@
 # @ricokahler/lazy · [![codecov](https://codecov.io/gh/ricokahler/lazy/branch/main/graph/badge.svg)](https://codecov.io/gh/ricokahler/lazy) [![github status checks](https://badgen.net/github/checks/ricokahler/lazy)](https://github.com/ricokahler/lazy/actions) [![bundlephobia](https://badgen.net/bundlephobia/minzip/@ricokahler/lazy)](https://bundlephobia.com/result?p=@ricokahler/lazy) [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-A small [(~600B gzip*)](https://bundle.js.org/?q=@ricokahler/lazy@latest), **useful** set of methods for lazy iteration of iterables.
+A small [(~900B gzip\*)](https://bundle.js.org/?q=@ricokahler/lazy@latest), **useful** set of methods for lazy iteration of iterables.
 
 ---
 
@@ -14,9 +14,10 @@ A small [(~600B gzip*)](https://bundle.js.org/?q=@ricokahler/lazy@latest), **use
 
 ## Why this lazy lib?
 
-1. Small size [(~600B gzipped)](https://bundle.js.org/?q=@ricokahler/lazy@latest)
-2. Simple, modern `for...of`-only implementations. (Read the source [here](https://github.com/ricokahler/lazy/blob/main/index.js))
+1. Small size [(~900B gzipped)](https://bundle.js.org/?q=@ricokahler/lazy@latest)
+2. Modern `for...of`-only implementations. (Read the source [here](https://github.com/ricokahler/lazy/blob/main/index.js))
 3. Only ships _useful_\* methods
+4. Support for async iterators
 
 \***Useful** is a keyword here because this library only ships with iterable methods that can take advantage of chained lazy iteration.
 
@@ -27,7 +28,7 @@ An example of this would be a `reverse()` method. If this lib implemented a `rev
 Since we have to buffer the items into an array anyway, there's not all that much difference between:
 
 ```js
-Lazy.from(iterable).reverse(); // not implemented!
+Lazy.from(iterable).reverse(); // 🛑 not implemented!
 ```
 
 and
@@ -100,6 +101,7 @@ console.log(result); // 3
 
 - [`map`](#map--)
 - [`filter`](#filter--)
+- [`scan`](#scan--)
 - [`flat`](#flat--)
 - [`flatMap`](#flatmap--)
 - [`take`](#take--)
@@ -132,10 +134,31 @@ Note: this is equivalent to calling `new Lazy(iterable)`
 
 Writes the iterable into another data structure. Accepts an object with a `from` method that accepts an iterable (e.g. `Array.from`) or a constructor that accepts an iterable.
 
+Note: if used with an async iterable, it will await and buffer all items into an array first.
+
 The implementation is as follows:
 
 ```js
 function to(iterable, constructorOrFromable) {
+  // switches behavior for async iterators
+  if (typeof iterable[Symbol.asyncIterator] === 'function') {
+    return toAsync(iterable, constructorOrFromable);
+  }
+
+  return toSync(iterable, constructorOrFromable);
+}
+
+async function toAsync(iterable, constructorOrFromable) {
+  // Async iterators will be buffered into an array first
+  const items = [];
+  for await (const item of iterable) {
+    items.push(item);
+  }
+
+  return toSync(items, constructorOrFromable);
+}
+
+function toSync(iterable, constructorOrFromable) {
   if (typeof constructorOrFromable.from === 'function') {
     return constructorOrFromable.from(iterable);
   }
@@ -165,6 +188,18 @@ Takes in an iterable and returns an iterable generator that yields the accepted 
 ```ts
 Lazy<T>.filter<R extends T>(accept: (t: T) => t is R): Lazy<R>
 Lazy<T>.filter<R extends T>(accept: (t: T) => t is R): Lazy<R>
+```
+
+#### `scan` | [🔝](#method-reference)
+
+Takes in an iterable, a reducer, and an initial accumulator value and returns another iterable that yields every intermediate accumulator created in the reducer for each item in the input iterable.
+
+Useful for encapsulating state over time.
+
+**Note:** the initial accumulator value is required.
+
+```ts
+Lazy<T>.scan<TAcc>(reducer: (acc: TAcc, t: T) => TAcc, initialAcc: TAcc): Lazy<TAcc>
 ```
 
 #### `flat` | [🔝](#method-reference)
@@ -250,6 +285,7 @@ Determines whether an iterable includes a certain value using `===` comparison. 
 
 ```ts
 Lazy<T>.includes(t: T): boolean
+Lazy<T>.includes(t: T): Promise<boolean> // if async iterable is provided
 ```
 
 #### `first` | [🔝](#method-reference)
@@ -258,6 +294,7 @@ Returns the first item of an iterable or `undefined` if the iterable is done/exh
 
 ```ts
 Lazy<T>.first(): T | undefined
+Lazy<T>.first(): Promise<T | undefined> // if async iterable is provided
 ```
 
 #### `find` | [🔝](#method-reference)
@@ -267,6 +304,7 @@ Returns the first item accepted by the given callback. Short-circuits iteration 
 ```ts
 Lazy<T>.find<R extends T>(accept: (t: T) => t is R): R | undefined
 Lazy<T>.find(accept: (t: T) => unknown): T | undefined
+Lazy<T>.find(accept: (t: T) => unknown): Promise<T | undefined> // if async iterable is provided
 ```
 
 #### `some` | [🔝](#method-reference)
@@ -275,6 +313,7 @@ Returns `true` if at least one item accepted by the given callback. Short-circui
 
 ```ts
 Lazy<T>.some(accept: (t: T) => unknown): boolean
+Lazy<T>.some(accept: (t: T) => unknown): Promise<boolean> // if async iterable is provided
 ```
 
 #### `every` | [🔝](#method-reference)
@@ -283,4 +322,5 @@ Returns `true` only if all items are accepted by the given callback. Short-circu
 
 ```ts
 Lazy<T>.every(accept: (t: T) => unknown): boolean
+Lazy<T>.every(accept: (t: T) => unknown): Promise<boolean> // if async iterable is provided
 ```

@@ -129,10 +129,10 @@ function* skipWhileSync(iterable, accept) {
   }
 }
 
-function* skipWhileAsync(iterable, accept) {
+async function* skipWhileAsync(iterable, accept) {
   let yielding = false;
 
-  for (const item of iterable) {
+  for await (const item of iterable) {
     if (yielding) {
       yield item;
     } else if (!accept(item)) {

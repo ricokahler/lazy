@@ -159,6 +159,9 @@ describe('skipWhile', () => {
         .to(Array),
     ).toEqual([]);
   });
+
+  it.todo('async/sync');
+  it.todo('completion prior to iterable exhaustion');
 });
 
 describe('takeWhile', () => {
@@ -177,6 +180,9 @@ describe('takeWhile', () => {
         .to(Array),
     ).toEqual([1, 2, 3]);
   });
+
+  it.todo('async/sync');
+  it.todo('completion prior to iterable exhaustion');
 });
 
 describe('map', () => {

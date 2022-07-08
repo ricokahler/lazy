@@ -80,7 +80,7 @@ async function* flatAsync(iterable, depth = 1) {
 
 function take(iterable, n) {
   return map(
-    filter(
+    takeWhile(
       scan(iterable, ([i], item) => [i - 1, item], [n]),
       ([i]) => i >= 0,
     ),
@@ -90,51 +90,56 @@ function take(iterable, n) {
 
 function skip(iterable, n) {
   return map(
-    filter(
+    skipWhile(
       scan(iterable, ([i], item) => [i - 1, item], [n]),
-      ([i]) => i < 0,
+      ([i]) => i >= 0,
     ),
     ([, item]) => item,
   );
 }
 
-function takeWhile(iterable, accept) {
-  return map(
-    filter(
-      scan(
-        iterable,
-        ([yielding], item) => {
-          if (yielding && accept(item)) return [true, item];
-          return [false];
-        },
-        [true],
-      ),
-      ([yielding]) => yielding,
-    ),
-    ([, item]) => item,
-  );
+function* takeWhileSync(iterable, accept) {
+  for (const item of iterable) {
+    if (accept(item)) yield item;
+    else return;
+  }
+}
+
+async function* takeWhileAsync(iterable, accept) {
+  for await (const item of iterable) {
+    if (accept(item)) yield item;
+    else return;
+  }
 }
 
 function flatMap(iterable, mapper) {
   return flat(map(iterable, mapper));
 }
 
-function skipWhile(iterable, accept) {
-  return map(
-    filter(
-      scan(
-        iterable,
-        ([yielding], item) => {
-          if (yielding) return [true, item];
-          if (accept(item)) return [false];
-          return [true, item];
-        },
-        [false],
-      ),
-      ([yielding]) => yielding,
-    ),
-    ([, item]) => item,
-  );
+function* skipWhileSync(iterable, accept) {
+  let yielding = false;
+
+  for (const item of iterable) {
+    if (yielding) {
+      yield item;
+    } else if (!accept(item)) {
+      yield item;
+      yielding = true;
+    }
+  }
+}
+
+function* skipWhileAsync(iterable, accept) {
+  let yielding = false;
+
+  for (const item of iterable) {
+    if (yielding) {
+      yield item;
+    } else if (!accept(item)) {
+      yield item;
+      yielding = true;
+    }
+  }
 }
 
 function firstSync(iterable) {
@@ -222,6 +227,8 @@ function pick(syncMethod, asyncMethod) {
 const map = pick(mapSync, mapAsync);
 const filter = pick(filterSync, filterAsync);
 const scan = pick(scanSync, scanAsync);
+const takeWhile = pick(takeWhileSync, takeWhileAsync);
+const skipWhile = pick(skipWhileSync, skipWhileAsync);
 const flat = pick(flatSync, flatAsync);
 const first = pick(firstSync, firstAsync);
 const to = pick(toSync, toAsync);

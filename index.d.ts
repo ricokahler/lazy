@@ -24,12 +24,12 @@ type FlatIterable<TIterable, TDepth extends number> = {
         [-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20][TDepth]
       >
     : TIterable extends AsyncIterable<infer InnerItr>
-    ? FlatIterable<
-        InnerItr,
-        // prettier-ignore
-        [-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20][TDepth]
-      >
-    : TIterable;
+      ? FlatIterable<
+          InnerItr,
+          // prettier-ignore
+          [-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20][TDepth]
+        >
+      : TIterable;
 }[TDepth extends -1 ? 'done' : 'recur'];
 
 interface AsyncLazy<T> extends Lazy<T>, AsyncIterable<T> {
@@ -42,19 +42,15 @@ interface SyncLazy<T> extends Lazy<T>, Iterable<T> {
   asyncIterable: undefined;
 }
 
-type InferLazyKind<
-  TClass extends Lazy<any>,
-  TValue,
-> = TClass extends AsyncLazy<any>
-  ? AsyncLazy<TValue>
-  : TClass extends SyncLazy<TValue>
-  ? SyncLazy<TValue>
-  : Lazy<TValue>;
+type InferLazyKind<TClass extends Lazy<any>, TValue> =
+  TClass extends AsyncLazy<any>
+    ? AsyncLazy<Awaited<TValue>>
+    : TClass extends SyncLazy<TValue>
+      ? SyncLazy<TValue>
+      : Lazy<TValue>;
 
-type ConditionalPromise<
-  TClass extends Lazy<any>,
-  TValue,
-> = TClass extends AsyncLazy<any> ? Promise<TValue> : TValue;
+type ConditionalPromise<TClass extends Lazy<any>, TValue> =
+  TClass extends AsyncLazy<any> ? Promise<TValue> : TValue;
 
 /**
  * A small, _useful_ set of methods for lazy iteration of iterables

@@ -42,8 +42,8 @@
     "lint": "eslint ./index.js && tsc"
   },
   "devDependencies": {
-    "@babel/preset-env": "7.18.10",
-    "@babel/preset-typescript": "7.18.6",
+    "@babel/preset-env": "7.24.3",
+    "@babel/preset-typescript": "7.24.1",
     "@rollup/plugin-babel": "6.0.4",
     "@rollup/plugin-node-resolve": "15.2.3",
     "@sanity/eslint-config-studio": "3.0.1",

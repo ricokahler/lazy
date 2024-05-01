@@ -54,7 +54,7 @@
     "prettier": "3.2.5",
     "regenerator-runtime": "0.14.1",
     "rollup": "4.17.2",
-    "semantic-release": "23.0.6",
+    "semantic-release": "23.0.8",
     "typescript": "5.4.5"
   }
 }

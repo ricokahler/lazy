@@ -46,7 +46,7 @@
     "@babel/preset-typescript": "7.24.6",
     "@rollup/plugin-babel": "6.0.4",
     "@rollup/plugin-node-resolve": "15.2.3",
-    "@sanity/eslint-config-studio": "3.0.1",
+    "@sanity/eslint-config-studio": "4.0.0",
     "@types/jest": "29.5.12",
     "@types/node": "^20.11.30",
     "eslint": "8.57.0",

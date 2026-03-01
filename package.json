@@ -53,7 +53,7 @@
     "jest": "29.7.0",
     "prettier": "3.8.1",
     "regenerator-runtime": "0.14.1",
-    "rollup": "4.57.1",
+    "rollup": "4.59.0",
     "semantic-release": "25.0.3",
     "typescript": "5.9.3"
   }
